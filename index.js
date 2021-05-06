@@ -78,6 +78,7 @@ const typeDefs = gql`
     links: Link
     id: String!
     name: String!
+    is_potentially_hazardous_asteroid: Boolean!
   }
 
   # Queries can fetch a list of libraries
