@@ -13,6 +13,10 @@ class ISSAPI extends RESTDataSource {
     // Send a GET request to the specified endpoint
     return this.get(`/`);
   }
+
+  async getLocations() {
+    return this.get('/25544/positions?timestamps=1436029892,1436029902&units=miles')
+  }
 }
 
 const libraries = [
@@ -93,11 +97,21 @@ const typeDefs = gql`
   type Query {
     libraries: [Library]
     satellites: [Satellite]
+    locations: [Location]
   }
   
   type Satellite {
     name: String!
     id: Int!
+  }
+  
+  type Location {
+    name: String!
+    id: Int!
+    latitude: Float!
+    longitude: Float!
+    altitude: Float!
+    velocity: Float!
   }
 `;
 
@@ -111,6 +125,9 @@ const resolvers = {
     async satellites(_, __, { dataSources }) {
       return dataSources.issAPI.getSatellites();
     },
+    async locations(_, __, { dataSources }) {
+      return dataSources.issAPI.getLocations();
+    }
   },
   Library: {
     books(parent) {
