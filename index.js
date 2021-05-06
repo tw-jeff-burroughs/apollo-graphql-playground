@@ -1,4 +1,19 @@
 const { ApolloServer, gql } = require('apollo-server');
+const { RESTDataSource } = require('apollo-datasource-rest');
+
+class ISSAPI extends RESTDataSource {
+  constructor() {
+    // Always call super()
+    super();
+    // Sets the base URL for the REST API
+    this.baseURL = 'https://api.wheretheiss.at/v1/satellites';
+  }
+
+  async getSatellites() {
+    // Send a GET request to the specified endpoint
+    return this.get(`/`);
+  }
+}
 
 const libraries = [
   {
@@ -77,6 +92,12 @@ const typeDefs = gql`
   # Queries can fetch a list of libraries
   type Query {
     libraries: [Library]
+    satellites: [Satellite]
+  }
+  
+  type Satellite {
+    name: String!
+    id: Int!
   }
 `;
 
@@ -84,10 +105,12 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     libraries() {
-
       // Return our hardcoded array of libraries
       return libraries;
-    }
+    },
+    async satellites(_, __, { dataSources }) {
+      return dataSources.issAPI.getSatellites();
+    },
   },
   Library: {
     books(parent) {
@@ -114,7 +137,12 @@ const resolvers = {
 
 // Pass schema definition and resolvers to the
 // ApolloServer constructor
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  dataSources: () => ({
+    issAPI: new ISSAPI()
+  }) });
 
 // Launch the server
 server.listen().then(({ url }) => {
