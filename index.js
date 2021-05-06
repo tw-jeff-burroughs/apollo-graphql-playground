@@ -118,7 +118,7 @@ const typeDefs = gql`
     altitude: Float!
     velocity: Float!
     visibility: String!
-    timestanp: Int!
+    timestamp: Int!
   }
   
   type APOD {
