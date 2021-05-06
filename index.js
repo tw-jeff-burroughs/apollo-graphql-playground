@@ -1,4 +1,35 @@
 const { ApolloServer, gql } = require('apollo-server');
+const { RESTDataSource } = require('apollo-datasource-rest');
+
+class NASAAPI extends RESTDataSource {
+  constructor() {
+    super();
+    this.baseURL = 'https://api.nasa.gov/planetary'
+  }
+
+  async getApod() {
+    return this.get(
+        `apod?api_key=${process.env.NASA}`);
+  }
+}
+
+class ISSAPI extends RESTDataSource {
+  constructor() {
+    // Always call super()
+    super();
+    // Sets the base URL for the REST API
+    this.baseURL = 'https://api.wheretheiss.at/v1/satellites';
+  }
+
+  async getSatellites() {
+    // Send a GET request to the specified endpoint
+    return this.get(`/`);
+  }
+
+  async getLocations() {
+    return this.get('/25544/positions?timestamps=1436029892,1436029902&units=miles')
+  }
+}
 
 const libraries = [
   {
@@ -73,10 +104,40 @@ const typeDefs = gql`
     pages: Int!
     ebook: Boolean!
   }
+  
+  type Satellite {
+    name: String!
+    id: Int!
+  }
+  
+  type Location {
+    name: String!
+    id: Int!
+    latitude: Float!
+    longitude: Float!
+    altitude: Float!
+    velocity: Float!
+    visibility: String!
+    timestanp: Int!
+  }
+  
+  type APOD {
+    copyright: String!
+    date: String!
+    explanation: String!
+    hdurl: String!
+    media_type: String!
+    service_version: String!
+    title: String!
+    url: String!
+  }
 
   # Queries can fetch a list of libraries
   type Query {
     libraries: [Library]
+    satellites: [Satellite]
+    locations: [Location]
+    apod: APOD
   }
 `;
 
@@ -84,9 +145,17 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     libraries() {
-
       // Return our hardcoded array of libraries
       return libraries;
+    },
+    async satellites(_, __, { dataSources }) {
+      return dataSources.issAPI.getSatellites();
+    },
+    async locations(_, __, { dataSources }) {
+      return dataSources.issAPI.getLocations();
+    },
+    async apod(_, __, { dataSources }) {
+      return dataSources.nasaAPI.getApod();
     }
   },
   Library: {
@@ -114,7 +183,13 @@ const resolvers = {
 
 // Pass schema definition and resolvers to the
 // ApolloServer constructor
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  dataSources: () => ({
+    issAPI: new ISSAPI(),
+    nasaAPI: new NASAAPI()
+  }) });
 
 // Launch the server
 server.listen().then(({ url }) => {
