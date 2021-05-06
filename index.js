@@ -1,6 +1,18 @@
 const { ApolloServer, gql } = require('apollo-server');
 const { RESTDataSource } = require('apollo-datasource-rest');
 
+class NASAAPI extends RESTDataSource {
+  constructor() {
+    super();
+    this.baseURL = 'https://api.nasa.gov/planetary'
+  }
+
+  async getApod() {
+    return this.get(
+        `apod?api_key=${process.env.NASA}`);
+  }
+}
+
 class ISSAPI extends RESTDataSource {
   constructor() {
     // Always call super()
@@ -92,13 +104,6 @@ const typeDefs = gql`
     pages: Int!
     ebook: Boolean!
   }
-
-  # Queries can fetch a list of libraries
-  type Query {
-    libraries: [Library]
-    satellites: [Satellite]
-    locations: [Location]
-  }
   
   type Satellite {
     name: String!
@@ -112,6 +117,27 @@ const typeDefs = gql`
     longitude: Float!
     altitude: Float!
     velocity: Float!
+    visibility: String!
+    timestanp: Int!
+  }
+  
+  type APOD {
+    copyright: String!
+    date: String!
+    explanation: String!
+    hdurl: String!
+    media_type: String!
+    service_version: String!
+    title: String!
+    url: String!
+  }
+
+  # Queries can fetch a list of libraries
+  type Query {
+    libraries: [Library]
+    satellites: [Satellite]
+    locations: [Location]
+    apod: APOD
   }
 `;
 
@@ -127,6 +153,9 @@ const resolvers = {
     },
     async locations(_, __, { dataSources }) {
       return dataSources.issAPI.getLocations();
+    },
+    async apod(_, __, { dataSources }) {
+      return dataSources.nasaAPI.getApod();
     }
   },
   Library: {
@@ -158,7 +187,8 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   dataSources: () => ({
-    issAPI: new ISSAPI()
+    issAPI: new ISSAPI(),
+    nasaAPI: new NASAAPI()
   }) });
 
 // Launch the server
