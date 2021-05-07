@@ -8,14 +8,14 @@ class NASAAPI extends RESTDataSource {
   }
 
   async getApod() {
-    return this.get(
+    return await this.get(
         `planetary/apod?api_key=${process.env.NASA}`);
   }
 
   async getNEOs() {
-    return this.get(
-        `neo/rest/v1/neo/browse?page=0&size=20&api_key=${process.env.NASA}`
-    )
+    return await this.get(
+        `neo/rest/v1/feed/today?detailed=false&api_key=${process.env.NASA}`
+    );
   }
 }
 
@@ -66,22 +66,17 @@ const typeDefs = gql`
     url: String!
   }
   
-  type NEO {
-    near_earth_objects: [NEO_BODY]
-  }
-  
   type NEO_BODY {
     id: String!
     name: String!
     is_potentially_hazardous_asteroid: Boolean!
-    diameter: Float!
   }
 
   # Queries can fetch a list of libraries
   type Query {
     satellites: [Satellite]
     locations: [Location]
-    neos: NEO
+    neos: [NEO_BODY]
     apod: APOD
   }
 `;
@@ -99,7 +94,9 @@ const resolvers = {
       return dataSources.nasaAPI.getApod();
     },
     async neos(_, __, { dataSources }) {
-      return dataSources.nasaAPI.getNEOs();
+      return dataSources.nasaAPI.getNEOs().then(data => {
+        return data["near_earth_objects"][new Date().toISOString().substr(0,10)];
+      })
     }
   },
 };
