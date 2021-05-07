@@ -66,19 +66,15 @@ const typeDefs = gql`
     url: String!
   }
   
-  type Link {
-    self: String!
-  }
-  
   type NEO {
     near_earth_objects: [NEO_BODY]
   }
   
   type NEO_BODY {
-    links: Link
     id: String!
     name: String!
     is_potentially_hazardous_asteroid: Boolean!
+    diameter: Float!
   }
 
   # Queries can fetch a list of libraries
